@@ -57,7 +57,7 @@ namespace winrt::Microsoft::Terminal::Settings::Model::implementation
         const auto globals = appSettings.GlobalSettings();
         settings->_ApplyProfileSettings(profile);
         settings->_ApplyGlobalSettings(globals);
-        settings->_ApplyAppearanceSettings(profile.DefaultAppearance(), globals.ColorSchemes());
+        settings->_ApplyAppearanceSettings(profile.DefaultAppearance(), globals.ColorSchemes(), globals.CurrentTheme());
 
         return settings;
     }
@@ -91,7 +91,7 @@ namespace winrt::Microsoft::Terminal::Settings::Model::implementation
         {
             const auto globals = appSettings.GlobalSettings();
             auto childImpl = settings->CreateChild();
-            childImpl->_ApplyAppearanceSettings(unfocusedAppearance, globals.ColorSchemes());
+            childImpl->_ApplyAppearanceSettings(unfocusedAppearance, globals.ColorSchemes(), globals.CurrentTheme());
             child = *childImpl;
         }
 
@@ -183,13 +183,67 @@ namespace winrt::Microsoft::Terminal::Settings::Model::implementation
         return settingsPair;
     }
 
-    void TerminalSettings::_ApplyAppearanceSettings(const IAppearanceConfig& appearance, const Windows::Foundation::Collections::IMapView<winrt::hstring, ColorScheme>& schemes)
+    void TerminalSettings::_ApplyAppearanceSettings(const IAppearanceConfig& appearance,
+                                                    const Windows::Foundation::Collections::IMapView<winrt::hstring, ColorScheme>& schemes,
+                                                    const winrt::Microsoft::Terminal::Settings::Model::Theme currentTheme)
     {
         _CursorShape = appearance.CursorShape();
         _CursorHeight = appearance.CursorHeight();
-        if (!appearance.ColorSchemeName().empty())
+        // coming from UI or there is a bad colorscheme name
+        if (appearance.DarkColorSchemeName() != appearance.ColorSchemeName() && currentTheme.RequestedTheme() == winrt::Windows::UI::Xaml::ElementTheme(2))
         {
             if (const auto scheme = schemes.TryLookup(appearance.ColorSchemeName()))
+            {
+                ApplyColorScheme(scheme);
+            }
+            else if (const auto defaultScheme = schemes.TryLookup(appearance.DarkColorSchemeName()))
+            {
+                ApplyColorScheme(defaultScheme);
+            }
+        }
+        // coming from UI or there is a bad colorscheme name
+        else if (appearance.DarkColorSchemeName() != appearance.ColorSchemeName() && currentTheme.RequestedTheme() == winrt::Windows::UI::Xaml::ElementTheme(1))
+        {
+            if (const auto scheme = schemes.TryLookup(appearance.ColorSchemeName()))
+            {
+                ApplyColorScheme(scheme);
+            }
+            else if (const auto defaultScheme = schemes.TryLookup(appearance.LightColorSchemeName()))
+            {
+                ApplyColorScheme(defaultScheme);
+            }
+        }
+        // good color schemename
+        else if (currentTheme.RequestedTheme() == winrt::Windows::UI::Xaml::ElementTheme(2))
+        {
+            if (!appearance.DarkColorSchemeName().empty())
+            {
+                if (const auto scheme = schemes.TryLookup(appearance.DarkColorSchemeName()))
+                {
+                    ApplyColorScheme(scheme);
+                }
+            }
+        }
+        // good color schemename
+        else if (currentTheme.RequestedTheme() == winrt::Windows::UI::Xaml::ElementTheme(1))
+        {
+            if (const auto scheme = schemes.TryLookup(appearance.LightColorSchemeName()))
+            {
+                ApplyColorScheme(scheme);
+            }
+        }
+        // good color schemename, but default app theme (apps way of saying check the system theme). This diverts to checking system theme
+        else if (currentTheme.RequestedTheme() == winrt::Windows::UI::Xaml::ElementTheme(0) && Windows::UI::Xaml::Application::Current().RequestedTheme() == Windows::UI::Xaml::ApplicationTheme::Dark)
+        {
+            if (const auto scheme = schemes.TryLookup(appearance.DarkColorSchemeName()))
+            {
+                ApplyColorScheme(scheme);
+            }
+        }
+        // good color schemename, but default app theme (apps way of saying check the system theme). This diverts to checking system theme
+        else if (currentTheme.RequestedTheme() == winrt::Windows::UI::Xaml::ElementTheme(0) && Windows::UI::Xaml::Application::Current().RequestedTheme() == Windows::UI::Xaml::ApplicationTheme::Light)
+        {
+            if (const auto scheme = schemes.TryLookup(appearance.LightColorSchemeName()))
             {
                 ApplyColorScheme(scheme);
             }
@@ -330,6 +384,7 @@ namespace winrt::Microsoft::Terminal::Settings::Model::implementation
         else
         {
             AppliedColorScheme(scheme);
+            ColorSchemeName(scheme.Name());
             _DefaultForeground = til::color{ scheme.Foreground() };
             _DefaultBackground = til::color{ scheme.Background() };
             _SelectionBackground = til::color{ scheme.SelectionBackground() };
