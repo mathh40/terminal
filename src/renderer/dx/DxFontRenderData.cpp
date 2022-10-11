@@ -743,13 +743,15 @@ void DxFontRenderData::_BuildFontRenderData(const FontInfoDesired& desired, Font
     // We're finding a proportional factor here with the design units in "ems", not an actual pixel measurement.
 
     // Now we play trickery with the font size. Scale by the DPI to get the height we expect.
-    heightDesired *= (static_cast<float>(dpi) / static_cast<float>(USER_DEFAULT_SCREEN_DPI));
+    const auto dpiF = static_cast<float>(dpi);
+    heightDesired *= (dpiF / static_cast<float>(USER_DEFAULT_SCREEN_DPI));
 
     const auto widthAdvance = static_cast<float>(advanceInDesignUnits) / fontMetrics.designUnitsPerEm;
 
     // Use the real pixel height desired by the "em" factor for the width to get the number of pixels
     // we will need per character in width. This will almost certainly result in fractional X-dimension pixels.
-    const auto widthApprox = heightDesired * widthAdvance;
+    auto widthApprox = heightDesired * widthAdvance;
+    widthApprox = desired.GetCellSizeAdjustmentX().AdjustValue(widthApprox, dpiF);
 
     // Since we can't deal with columns of the presentation grid being fractional pixels in width, round to the nearest whole pixel.
     const auto widthExact = round(widthApprox);
@@ -809,8 +811,10 @@ void DxFontRenderData::_BuildFontRenderData(const FontInfoDesired& desired, Font
 
     const auto fullPixelAscent = ceil(ascent + halfGap);
     const auto fullPixelDescent = ceil(descent + halfGap);
-    lineSpacing.height = fullPixelAscent + fullPixelDescent;
-    lineSpacing.baseline = fullPixelAscent;
+    const auto defaultHeight = fullPixelAscent + fullPixelDescent;
+
+    lineSpacing.height = roundf(desired.GetCellSizeAdjustmentY().AdjustValue(defaultHeight, dpiF));
+    lineSpacing.baseline = roundf(fullPixelAscent + (lineSpacing.height - defaultHeight) / 2.0f);
 
     // According to MSDN (https://docs.microsoft.com/en-us/windows/win32/api/dwrite_3/ne-dwrite_3-dwrite_font_line_gap_usage)
     // Setting "ENABLED" means we've included the line gapping in the spacing numbers given.
@@ -861,8 +865,8 @@ void DxFontRenderData::_BuildFontRenderData(const FontInfoDesired& desired, Font
 
     // Offsets are relative to the base line of the font, so we subtract
     // from the ascent to get an offset relative to the top of the cell.
-    lineMetrics.underlineOffset = fullPixelAscent - lineMetrics.underlineOffset;
-    lineMetrics.strikethroughOffset = fullPixelAscent - lineMetrics.strikethroughOffset;
+    lineMetrics.underlineOffset = lineSpacing.baseline - lineMetrics.underlineOffset;
+    lineMetrics.strikethroughOffset = lineSpacing.baseline - lineMetrics.strikethroughOffset;
 
     // For double underlines we need a second offset, just below the first,
     // but with a bit of a gap (about double the grid line width).

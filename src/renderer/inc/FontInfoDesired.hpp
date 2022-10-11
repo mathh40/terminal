@@ -20,6 +20,7 @@ Author(s):
 
 #include "FontInfoBase.hpp"
 #include "FontInfo.hpp"
+#include "SizeAdjustment.h"
 
 class FontInfoDesired : public FontInfoBase
 {
@@ -33,6 +34,10 @@ public:
 
     bool operator==(const FontInfoDesired& other) = delete;
 
+    void SetCellSizeAdjustments(const SizeAdjustment& adjustmentX, const SizeAdjustment& adjustmentY) noexcept;
+
+    const SizeAdjustment& GetCellSizeAdjustmentX() const noexcept;
+    const SizeAdjustment& GetCellSizeAdjustmentY() const noexcept;
     float GetFontSize() const noexcept;
     til::size GetEngineSize() const noexcept;
     bool IsDefaultRasterFont() const noexcept;
@@ -40,4 +45,6 @@ public:
 private:
     til::size _coordSizeDesired;
     float _fontSize;
+    SizeAdjustment _adjustmentX;
+    SizeAdjustment _adjustmentY;
 };

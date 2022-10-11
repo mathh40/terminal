@@ -23,6 +23,22 @@ FontInfoDesired::FontInfoDesired(const FontInfo& fiFont) noexcept :
 {
 }
 
+void FontInfoDesired::SetCellSizeAdjustments(const SizeAdjustment& adjustmentX, const SizeAdjustment& adjustmentY) noexcept
+{
+    _adjustmentX = adjustmentX;
+    _adjustmentY = adjustmentY;
+}
+
+const SizeAdjustment& FontInfoDesired::GetCellSizeAdjustmentX() const noexcept
+{
+    return _adjustmentX;
+}
+
+const SizeAdjustment& FontInfoDesired::GetCellSizeAdjustmentY() const noexcept
+{
+    return _adjustmentY;
+}
+
 float FontInfoDesired::GetFontSize() const noexcept
 {
     return _fontSize;

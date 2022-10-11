@@ -411,8 +411,8 @@ namespace Microsoft::Console::Render
         {
             wil::com_ptr<IDWriteFontCollection> fontCollection;
             std::wstring fontName;
-            float baselineInDIP = 0.0f;
-            float fontSizeInDIP = 0.0f;
+            f32 baselineInDIP = 0.0f;
+            f32 fontSizeInDIP = 0.0f;
             f32 advanceScale = 0;
             u16x2 cellSize;
             u16 fontWeight = 0;

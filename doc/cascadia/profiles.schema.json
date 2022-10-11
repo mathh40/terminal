@@ -296,6 +296,13 @@
       },
       "type": "object"
     },
+    "SizeAdjustment": {
+      "pattern": "^[+-]?\\d+(?:\\.\\d+)?(?:%|px|pt)?$",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
     "ProfileGuid": {
       "default": "{}",
       "pattern": "^\\{[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}\\}$",
@@ -2085,6 +2092,14 @@
             "object",
             "null"
           ]
+        },
+        "cellSize.x": {
+          "$ref": "#/$defs/SizeAdjustment",
+          "description": "TODO."
+        },
+        "cellSize.y": {
+          "$ref": "#/$defs/SizeAdjustment",
+          "description": "TODO."
         },
         "backgroundImage": {
           "description": "Sets the file location of the image to draw over the window background.",
